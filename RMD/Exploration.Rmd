@@ -1,0 +1,156 @@
+---
+title: "Test Document"
+output: html_document
+date: "2025-04-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document adapts a tutorial available at https://www.regorz-statistik.de/blog/power_path_analysis_sempower.html .
+
+# Create and explore fake data
+First we will create some fake data.
+
+```{r}
+variable_a_chr <- c("Test1", "Test2")
+variable_b_dbl <- c(3.4, 2.1)
+data_tb <- tibble::tibble(A = variable_a_chr,
+                          B = variable_b_dbl)
+```
+
+We explore our dataset.
+
+```{r}
+data_tb 
+```
+
+We can plot a histogram of the numeric variable.
+
+```{r}
+ hist(data_tb$B)
+```
+
+# Undertake power analysis
+
+## Load libraries
+
+```{r}
+library(semPower)
+library(lavaan)
+```
+
+
+## Write functions
+
+```{r}
+calculate_info <- function(k){
+  k * (k + 1) / 2
+}
+calculate_parameters <- function(variables_1L_int,
+                                 variances_1L_int,
+                                 directed_1L_int,
+                                 covariances_1L_int){
+  info_1L_int <- calculate_info(variables_1L_int)
+  info_1L_int - variables_1L_int - directed_1L_int - covariances_1L_int
+}
+```
+
+
+
+
+## Apply to tutorial example
+
+
+### Method 1
+
+```{r}
+calculate_parameters(6, variances_1L_int = 6, directed_1L_int = 7, covariances_1L_int = 2)
+```
+
+
+### Method 2
+
+```{r}
+path1 <- '
+MED1 ~ IV1 + IV2
+MED2 ~ IV1 + IV2
+DV1 ~ MED1 + MED2
+DV2 ~ MED2
+IV1~~IV2
+DV1~~DV2
+'
+```
+
+```{r}
+semPower.getDf(path1)
+```
+
+```{r}
+calculate_parameters(6, variances_1L_int = 6, directed_1L_int = 8, covariances_1L_int = 0)
+```
+## Apply to project
+
+### Method 1
+
+```{r}
+calculate_info(6)
+```
+
+### Method 2
+
+```{r}
+path_project <- '
+PF ~ SC
+EF ~ SC
+AA ~ SC
+NBE ~ SC + PF + EF + AC
+ANX ~ SC + PF + EF + AA + NBE
+'
+```
+
+
+```{r}
+semPower.getDf(path_project)
+```
+
+# Next bit
+
+```{r}
+path_full_1 <- semPower.aPriori(effect = 0.06,
+effect.measure = 'RMSEA',
+alpha = .05,
+power = .80,
+df = 6)
+```
+
+
+```{r}
+path_full_2 <- semPower.aPriori(effect = 0.90,
+effect.measure = 'AGFI',
+alpha = .05,
+power = .80,
+df = 6,
+p = 6)
+```
+
+
+```{r}
+summary(path_full_1)
+```
+
+
+```{r}
+summary(path_full_2)
+```
+```{r}
+path_full_1$requiredN
+```
+
+
+
+```{r}
+path_full_2$requiredN
+```
+
